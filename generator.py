@@ -39,6 +39,7 @@ c = None
 pdf_index = 0
 qr_count = 0
 positions = [(100, 500), (350, 500), (100, 250), (350, 250)]  # Positioner för QR-koder på sidan
+start_index = 1  # Håller reda på startindex för varje PDF-fil, börjar med 1 istället för 0
 
 for index, row in df.iterrows():
     link = row['Länk']  # Byt ut med rätt kolumnnamn om nödvändigt
@@ -46,16 +47,18 @@ for index, row in df.iterrows():
     qr = qrcode.make(link)
 
     # Spara QR-koden som en tillfällig bildfil
-    qr_image_path = os.path.join(output_dir, f'qr_code_{index}.png')
+    qr_image_path = os.path.join(output_dir, f'qr_code_{index + 1}.png')
     qr.save(qr_image_path)
     print(f"QR-kod sparad som bild: {qr_image_path}")
 
     if qr_count % 4 == 0:
         if c:
+            pdf_path = os.path.join(output_dir, f'qr_codes_{start_index}-{index}.pdf')
             c.save()
             print(f"PDF-fil sparad: {pdf_path}")
         pdf_index += 1
-        pdf_path = os.path.join(output_dir, f'qr_codes_{pdf_index}.pdf')
+        start_index = index + 1  # Uppdatera startindex till nästa QR-kod, justerat till 1-baserad
+        pdf_path = os.path.join(output_dir, f'qr_codes_{start_index}-{start_index+3}.pdf')
         c = canvas.Canvas(pdf_path, pagesize=letter)
         print(f"Skapar ny PDF-fil: {pdf_path}")
 
@@ -68,8 +71,9 @@ for index, row in df.iterrows():
     os.remove(qr_image_path)
     print(f"Tillfällig bildfil borttagen: {qr_image_path}")
 
-# Spara sista PDF-filen
+# Spara sista PDF-filen med korrekt namn
 if c:
+    pdf_path = os.path.join(output_dir, f'qr_codes_{start_index}-{index + 1}.pdf')
     c.save()
     print(f"Sista PDF-fil sparad: {pdf_path}")
 
