@@ -34,7 +34,12 @@ if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 print(f"PDF-filer kommer att sparas i: {output_dir}")
 
-# Steg 2: Generera QR-koder för varje länk
+# Steg 2: Generera QR-koder och lägg upp till 4 på varje PDF-sida
+c = None
+pdf_index = 0
+qr_count = 0
+positions = [(100, 500), (350, 500), (100, 250), (350, 250)]  # Positioner för QR-koder på sidan
+
 for index, row in df.iterrows():
     link = row['Länk']  # Byt ut med rätt kolumnnamn om nödvändigt
     print(f"Genererar QR-kod för länk: {link}")
@@ -45,17 +50,27 @@ for index, row in df.iterrows():
     qr.save(qr_image_path)
     print(f"QR-kod sparad som bild: {qr_image_path}")
 
-    # Skapa en PDF-fil och lägg till QR-koden
-    pdf_path = os.path.join(output_dir, f'qr_code_{index}.pdf')
-    print(f"Skapar PDF-fil: {pdf_path}")
-    c = canvas.Canvas(pdf_path, pagesize=letter)
-    c.drawImage(qr_image_path, 100, 500, width=200, height=200)
-    c.drawString(100, 480, link)  # Lägg till länken som text under QR-koden
-    c.save()
-    print(f"PDF-fil sparad: {pdf_path}")
+    if qr_count % 4 == 0:
+        if c:
+            c.save()
+            print(f"PDF-fil sparad: {pdf_path}")
+        pdf_index += 1
+        pdf_path = os.path.join(output_dir, f'qr_codes_{pdf_index}.pdf')
+        c = canvas.Canvas(pdf_path, pagesize=letter)
+        print(f"Skapar ny PDF-fil: {pdf_path}")
+
+    pos_x, pos_y = positions[qr_count % 4]
+    c.drawImage(qr_image_path, pos_x, pos_y, width=200, height=200)
+    c.drawString(pos_x, pos_y - 20, link)  # Lägg till länken som text under QR-koden
+    qr_count += 1
 
     # Ta bort den tillfälliga bildfilen
     os.remove(qr_image_path)
     print(f"Tillfällig bildfil borttagen: {qr_image_path}")
+
+# Spara sista PDF-filen
+if c:
+    c.save()
+    print(f"Sista PDF-fil sparad: {pdf_path}")
 
 print("QR-koder genererade och sparade som PDF-filer.")
